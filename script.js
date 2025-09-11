@@ -412,6 +412,24 @@ function spawnEnemyBullet(x, y, speed = 6) {
   }, 20);
 }
 
+function spawnEnemyBeam(x, y) {
+  const beam = document.createElement('div');
+  beam.classList.add('enemy-beam');
+  beam.style.left = `${x - 300}px`;
+  gameContainer.appendChild(beam);
+  beam.style.top = `${y - beam.offsetHeight / 2}px`;
+  const interval = setInterval(() => {
+    const currentLeft = parseInt(beam.style.left, 10);
+    if (gameOver || currentLeft < -beam.offsetWidth) {
+      beam.remove();
+      clearInterval(interval);
+    } else {
+      beam.style.left = `${currentLeft - 16}px`;
+      checkEnemyBulletCollision(beam, interval);
+    }
+  }, 16);
+}
+
 function checkEnemyBulletCollision(bullet, interval) {
   const playerRect = player.getBoundingClientRect();
   const bulletRect = bullet.getBoundingClientRect();
@@ -518,6 +536,7 @@ function checkBulletCollision(bullet, interval, type) {
         if (hp <= 0) {
           if (enemy.shootInterval) clearInterval(enemy.shootInterval);
           if (enemy.moveInterval) clearInterval(enemy.moveInterval);
+          if (enemy.chargeInterval) clearInterval(enemy.chargeInterval);
           enemy.remove();
           let points = 1000;
           bossBattle = false;
@@ -702,7 +721,7 @@ function spawnBoss() {
         clearInterval(move);
         boss.homeX = targetLeft;
         boss.homeY = parseInt(boss.style.top, 10);
-        startBossPatterns(boss);
+        startBossMovement(boss);
       }
       checkPlayerCollision(boss, move);
     }
@@ -714,81 +733,44 @@ function spawnBoss() {
     boss.classList.add('warning');
     setTimeout(() => {
       boss.classList.remove('warning');
-      spawnEnemyBullet(boss.offsetLeft, boss.offsetTop + boss.offsetHeight / 2, 8);
+      spawnEnemyBeam(boss.offsetLeft, boss.offsetTop + boss.offsetHeight / 2);
     }, 500);
   };
   const shootInterval = setInterval(attack, 1500);
   boss.shootInterval = shootInterval;
 }
 
-function startBossPatterns(boss) {
-  const patterns = [bossPatternVertical, bossPatternCharge, bossPatternZigzag];
-  const runNext = () => {
-    if (gameOver || !document.body.contains(boss)) return;
-    const p = patterns[Math.floor(Math.random() * patterns.length)];
-    p(boss, () => setTimeout(runNext, 500));
-  };
-  runNext();
-}
-
-function bossPatternVertical(boss, done) {
-  let dir = Math.random() < 0.5 ? -1 : 1;
+function startBossMovement(boss) {
+  let dirY = 1;
+  boss.isCharging = false;
   const interval = setInterval(() => {
     if (gameOver) { clearInterval(interval); return; }
-    let top = parseInt(boss.style.top, 10) + dir * 3;
-    if (top < 0 || top > window.innerHeight - boss.offsetHeight) dir *= -1;
+    let top = parseInt(boss.style.top, 10) + dirY * 3;
+    if (top < 0 || top > window.innerHeight - boss.offsetHeight) dirY *= -1;
     boss.style.top = `${top}px`;
-    checkPlayerCollision(boss, interval);
-  }, 20);
-  setTimeout(() => { clearInterval(interval); done(); }, 3000);
-}
-
-function bossPatternCharge(boss, done) {
-  boss.classList.add('warning');
-  setTimeout(() => {
-    boss.classList.remove('warning');
-    let phase = 'forward';
-    const interval = setInterval(() => {
-      if (gameOver) { clearInterval(interval); return; }
+    if (boss.isCharging) {
       let left = parseInt(boss.style.left, 10);
-      let top = parseInt(boss.style.top, 10);
-      if (phase === 'forward') {
+      if (boss.chargePhase === 'forward') {
         left -= 12;
-        const targetY = player.offsetTop + player.offsetHeight / 2 - boss.offsetHeight / 2;
-        top += Math.sign(targetY - top) * 4;
-        if (left <= playerX) phase = 'back';
+        if (left <= playerX) boss.chargePhase = 'back';
       } else {
         left += 12;
-        if (left >= boss.homeX) { left = boss.homeX; phase = 'done'; }
+        if (left >= boss.homeX) { left = boss.homeX; boss.isCharging = false; }
       }
       boss.style.left = `${left}px`;
-      boss.style.top = `${top}px`;
-      checkPlayerCollision(boss, interval);
-      if (phase === 'done') { clearInterval(interval); done(); }
-    }, 20);
-  }, 500);
-}
-
-function bossPatternZigzag(boss, done) {
-  let dirX = -1;
-  let dirY = Math.random() < 0.5 ? -1 : 1;
-  const minX = boss.homeX - 100;
-  const maxX = boss.homeX;
-  const interval = setInterval(() => {
-    if (gameOver) { clearInterval(interval); return; }
-    let left = parseInt(boss.style.left, 10) + dirX * 4;
-    let top = parseInt(boss.style.top, 10) + dirY * 4;
-    if (left <= minX || left >= maxX) dirX *= -1;
-    if (top <= 0 || top >= window.innerHeight - boss.offsetHeight) dirY *= -1;
-    boss.style.left = `${left}px`;
-    boss.style.top = `${top}px`;
+    }
     checkPlayerCollision(boss, interval);
   }, 20);
-  setTimeout(() => {
-    clearInterval(interval);
-    boss.style.left = `${boss.homeX}px`;
-    done();
-  }, 3000);
+  boss.moveInterval = interval;
+  const chargeInterval = setInterval(() => {
+    if (gameOver || !document.body.contains(boss)) {
+      clearInterval(chargeInterval);
+      return;
+    }
+    boss.isCharging = true;
+    boss.chargePhase = 'forward';
+  }, 15000);
+  boss.chargeInterval = chargeInterval;
 }
 
 // ==== 爆発 ====
