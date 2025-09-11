@@ -190,6 +190,13 @@ body::after{
   box-shadow: 0 0 10px rgba(255,0,60,.85), 0 0 30px rgba(255,0,60,.4);
 }
 
+.enemy-beam{
+  position:absolute; width:300px; height:16px; border-radius:8px;
+  background: linear-gradient(90deg, #ff003c, #ff9aa2, #ff003c);
+  box-shadow: 0 0 8px #ff003c, 0 0 16px #ff003c, 0 0 48px rgba(255,0,60,.6);
+  animation: beamGlow .35s alternate infinite;
+}
+
 /* バリア（当たり3回） */
 .barrier{
   position:absolute; top:-10px; left:-10px; width:188px; height:132px; border-radius:50%;
