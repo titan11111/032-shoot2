@@ -175,11 +175,9 @@ function startGame() {
   overlay.style.display = 'none';
   overlay.classList.remove('flash');
   gameContainer.style.display = 'block';
-  if (controlMode === 'mobile') {
-    mobileControls.style.display = 'block';
-  } else {
-    mobileControls.style.display = 'none';
-  }
+  // Always show on-screen controls so both mobile and desktop players can tap
+  // the arrows and shoot button. Keyboard controls remain available.
+  mobileControls.style.display = 'block';
   scoreDisplay.style.display = 'block';
   stageDisplay.style.display = 'block';
   document.getElementById('countdown').style.display = 'block';
@@ -394,7 +392,8 @@ function spawnHoming() {
   }, 20);
 }
 
-function spawnEnemyBullet(x, y, speed = 6) {
+// Enemy projectile moves slower to give players more reaction time
+function spawnEnemyBullet(x, y, speed = 3) {
   const bullet = document.createElement('div');
   bullet.classList.add('enemy-bullet');
   bullet.style.left = `${x}px`;
@@ -481,17 +480,18 @@ function spawnEnemy() {
   let shootInterval = null;
   if (type === 'enemy-strong') {
     speedX = 2;
-    shootInterval = setInterval(() => {
-      spawnEnemyBullet(enemy.offsetLeft, enemy.offsetTop + enemy.offsetHeight / 2, 6);
-    }, 1500);
+      shootInterval = setInterval(() => {
+        // Slow enemy bullets for more balanced gameplay
+        spawnEnemyBullet(enemy.offsetLeft, enemy.offsetTop + enemy.offsetHeight / 2, 3);
+      }, 1500);
   } else if (type === 'enemy-fast') {
     speedX = 6;
     enemy.dataset.freq = (0.15 + Math.random() * 0.05).toString();
   } else if (type === 'enemy-shooter') {
     speedX = 2;
-    shootInterval = setInterval(() => {
-      spawnEnemyBullet(enemy.offsetLeft, enemy.offsetTop + enemy.offsetHeight / 2, 8);
-    }, 1000);
+      shootInterval = setInterval(() => {
+        spawnEnemyBullet(enemy.offsetLeft, enemy.offsetTop + enemy.offsetHeight / 2, 4);
+      }, 1000);
   }
   if (shootInterval) enemy.shootInterval = shootInterval;
 
@@ -793,9 +793,8 @@ function updateScore(amount) {
 function endGame() {
   if (gameOver) return;
   gameOver = true;
-  if (controlMode === 'mobile') {
-    mobileControls.style.display = 'none';
-  }
+  // Hide on-screen controls when the game ends
+  mobileControls.style.display = 'none';
   setScrolling(false);
   scoreDisplay.style.display = 'none';
   stageDisplay.style.display = 'none';
