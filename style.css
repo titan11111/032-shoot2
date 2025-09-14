@@ -99,16 +99,15 @@ body::after{
   font-feature-settings:"palt";
 }
 
-/* 背景：既存の火山スクロールに、スピードライン＋ネビュラを足す（CSSのみ） */
+/* 背景：星空 */
 #background{
   position:absolute; inset:0; width:200%; height:100%;
   background:
     radial-gradient(1200px 800px at 70% -20%, rgba(0,255,255,0.08), transparent 60%),
     radial-gradient(900px 600px at -10% 120%, rgba(255,0,128,0.06), transparent 60%),
-    repeating-linear-gradient(-12deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 90px),
-    url("images/volcano.svg") repeat-x bottom;
-  background-size: cover, cover, auto 100%, cover;       /* 既存の画像指定は維持 */
-  animation: scrollBackground 20s linear infinite;       /* 既存アニメ維持 */
+    url("images/starfield.svg") repeat;
+  background-size: cover, cover, auto;       /* 星背景をリピート */
+  animation: scrollBackground 20s linear infinite;
   filter: saturate(1.1) contrast(1.05);
 }
 @keyframes scrollBackground{
@@ -163,6 +162,7 @@ body::after{
 /* 敵・ボス -------------------------------------------------------- */
 .enemy, .enemy-strong, .enemy-fast, .enemy-shooter, .boss{
   position:absolute; border-radius:8px; overflow:hidden;
+  z-index:3;
   filter: drop-shadow(0 0 10px rgba(0,0,0,.4)) drop-shadow(0 0 16px rgba(79,172,254,.25));
 }
 .enemy, .enemy-fast{ width:80px; height:60px }
@@ -172,6 +172,16 @@ body::after{
 
 .boss.warning{ animation: bossFlash .5s steps(2,start) }
 @keyframes bossFlash{ 0%,100%{ opacity:1 } 50%{ opacity:.35; filter: hue-rotate(20deg) } }
+
+/* 惑星（背景オブジェクト） */
+.planet{
+  position:absolute;
+  border-radius:50%;
+  z-index:1;
+  pointer-events:none;
+  opacity:0.8;
+  box-shadow:0 0 12px rgba(255,255,255,0.2);
+}
 
 /* 爆発を少しリッチに */
 .explosion{

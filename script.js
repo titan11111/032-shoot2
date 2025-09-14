@@ -73,6 +73,36 @@ function setupMobileButtons() {
 
 setupMobileButtons();
 
+// ==== 惑星生成 ====
+function spawnPlanet() {
+  const planet = document.createElement('div');
+  planet.classList.add('planet');
+  const size = Math.random() * 80 + 40;
+  planet.style.width = `${size}px`;
+  planet.style.height = `${size}px`;
+  planet.style.top = `${Math.random() * (window.innerHeight - size)}px`;
+  planet.style.left = `${window.innerWidth}px`;
+  const hue = Math.floor(Math.random() * 360);
+  planet.style.background = `radial-gradient(circle at 30% 30%, hsl(${hue},80%,85%), hsl(${hue},80%,40%))`;
+  gameContainer.appendChild(planet);
+  const distance = window.innerWidth + size;
+  const duration = 20000 + Math.random() * 10000;
+  planet.animate(
+    [ { transform: 'translateX(0)' }, { transform: `translateX(-${distance}px)` } ],
+    { duration, easing: 'linear' }
+  ).onfinish = () => planet.remove();
+}
+
+function startPlanetSpawn() {
+  if (planetInterval) clearInterval(planetInterval);
+  spawnPlanet();
+  planetInterval = setInterval(spawnPlanet, 8000);
+}
+
+function stopPlanetSpawn() {
+  if (planetInterval) clearInterval(planetInterval);
+}
+
 // ==== SVG キャッシュ機構 ====
 const svgCache = {};
 function getSvgImage(key, svgText) {
@@ -168,6 +198,7 @@ let enemiesDestroyed = 0;
 let bossBattle = false;
 let bossCountdown = 60;
 let bossInterval;
+let planetInterval;
 
 function startGame() {
   startScreen.style.display = 'none';
@@ -207,7 +238,7 @@ function startGame() {
   document.getElementById('countdown').textContent = '';
   finalScoreDisplay.textContent = '';
 
-  document.querySelectorAll('.enemy, .enemy-strong, .enemy-fast, .enemy-shooter, .boss, .bullet, .bullet-strong, .beam, .homing, .enemy-bullet, .item, .explosion').forEach(e => e.remove());
+  document.querySelectorAll('.enemy, .enemy-strong, .enemy-fast, .enemy-shooter, .boss, .bullet, .bullet-strong, .beam, .homing, .enemy-bullet, .item, .explosion, .planet').forEach(e => e.remove());
 
   player.innerHTML = '';
   player.appendChild(getSvgImage('player', PLAYER_SVG));
@@ -222,6 +253,7 @@ function startGame() {
   bgmToggle.textContent = bgm.muted ? 'BGM: OFF' : 'BGM: ON';
   setScrolling(true);
   gameOver = false;
+  startPlanetSpawn();
   gameLoop();
   spawnEnemy();
   spawnItem();
@@ -796,6 +828,7 @@ function endGame() {
   // Hide on-screen controls when the game ends
   mobileControls.style.display = 'none';
   setScrolling(false);
+  stopPlanetSpawn();
   scoreDisplay.style.display = 'none';
   stageDisplay.style.display = 'none';
   document.getElementById('countdown').style.display = 'none';
