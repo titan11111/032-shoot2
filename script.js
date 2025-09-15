@@ -184,7 +184,7 @@ const ITEM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
 
 let playerY = window.innerHeight / 2;
 let playerX = window.innerWidth * 0.2;
-const speed = 5;
+const speed = 5 * 1000;
 let keys = {};
 let score = 0;
 let gameOver = false;
