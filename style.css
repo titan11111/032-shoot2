@@ -1,7 +1,3 @@
-/* === Neo-Arc HUD Skin (CSS only) =========================================
-   - HTML/JSは既存そのまま（id/class変更なし）
-   - 主要テーマは変数で調整可能
-========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+JP:wght@400;700&display=swap');
 
 :root{
@@ -10,256 +6,159 @@
   --neon-cyan:#00f2fe;
   --neon-blue:#4facfe;
   --neon-mag:#ff00cc;
+  --neon-red:#ff3333;
   --neon-yellow:#ffcc00;
-  --hud-glass:rgba(255,255,255,0.06);
-  --hud-border:rgba(255,255,255,0.22);
-  --hud-shadow:0 0 16px rgba(0,255,255,0.25), 0 0 48px rgba(0,255,255,0.15);
+  --hud-glass:rgba(255,255,255,0.1);
+  --hud-border:rgba(255,255,255,0.3);
   --text:#eaf6ff;
 }
 
-/* Base ------------------------------------------------------------ */
-*{box-sizing:border-box}
-html,body{height:100%}
+*{box-sizing:border-box; user-select: none; -webkit-user-select: none;}
 body{
   margin:0; overflow:hidden;
-  font-family:'Noto Sans JP','Segoe UI',system-ui,sans-serif;
+  font-family:'Orbitron', sans-serif;
   color:var(--text);
-  background:
-    radial-gradient(1200px 800px at 110% -10%, rgba(0,255,255,0.10), transparent 60%),
-    radial-gradient(900px 600px at -10% 120%, rgba(255,0,128,0.08), transparent 60%),
-    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  background: #000;
 }
 
-/* 画面のビネット＋CRTライン（演出） */
-body::after{
-  content:"";
-  position:fixed; inset:0; pointer-events:none; z-index:1;
-  background:
-    radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.65) 100%),
-    repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px);
-  mix-blend-mode:normal;
+/* 背景（CSSで星空生成） */
+#background {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  z-index: -1;
+}
+#background::after {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+  background-size: 200px 200px;
+  animation: starScroll 4s linear infinite;
+}
+@keyframes starScroll {
+  from { transform: translateY(0); }
+  to { transform: translateY(200px); }
 }
 
-/* デバイス選択/スタート画面 -------------------------------------- */
-#device-select, #start-screen{
-  position:fixed; inset:0; z-index:1000;
+/* UIレイアウト */
+#device-select, #start-screen {
+  position:fixed; inset:0; z-index:100;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:
-    radial-gradient(1000px 700px at 50% -10%, rgba(0,255,255,0.10), transparent 60%),
-    linear-gradient(180deg, rgba(5,10,25,0.95), rgba(2,4,9,0.95));
-  backdrop-filter: blur(8px);
-  gap:24px;
+  background: rgba(5,10,25,0.95);
+  gap: 20px;
+}
+h1 { font-size: 4rem; color: var(--neon-cyan); text-align: center; text-shadow: 0 0 20px var(--neon-blue); margin: 0; }
+h2 { font-size: 1.5rem; margin: 0; }
+
+button {
+  padding: 15px 30px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  color: white;
+  background: linear-gradient(45deg, var(--neon-blue), var(--neon-cyan));
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 0 15px var(--neon-blue);
+  transition: 0.2s;
+}
+button:active { transform: scale(0.95); }
+
+/* ゲーム内UI */
+#ui-layer { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; z-index: 10; font-size: 1.2rem; pointer-events: none; }
+#score, #stage, #bombs { text-shadow: 0 0 5px cyan; }
+
+#bgm-toggle { position: absolute; top: 50px; right: 10px; padding: 5px 10px; font-size: 0.8rem; z-index: 20; }
+
+/* プレイヤー機体（CSS描画） */
+#player {
+  position: absolute;
+  width: 50px; height: 50px;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  transition: transform 0.1s;
+}
+.player-body {
+  width: 0; height: 0;
+  border-left: 25px solid transparent;
+  border-right: 25px solid transparent;
+  border-bottom: 50px solid var(--neon-cyan);
+  filter: drop-shadow(0 0 10px var(--neon-cyan));
+}
+.player-engine {
+  position: absolute; bottom: -10px; left: 15px;
+  width: 20px; height: 10px;
+  background: orange;
+  filter: blur(5px);
+  animation: engineFlicker 0.1s infinite alternate;
+}
+@keyframes engineFlicker { from { opacity: 0.8; } to { opacity: 1; height: 15px; } }
+
+/* 敵機体（CSS描画） */
+.enemy {
+  position: absolute;
+  width: 40px; height: 40px;
+  background: var(--neon-red);
+  border-radius: 5px;
+  box-shadow: 0 0 10px var(--neon-red);
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+.enemy::after {
+  content: "▼"; color: #300; position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px;
 }
 
-/* タイトルをグリッチっぽく */
-#start-screen h1{
-  font-family:'Orbitron',sans-serif;
-  font-size:min(14vw,110px);
-  line-height:1.0; letter-spacing:.02em;
-  color:var(--neon-yellow);
-  text-shadow:
-    0 0 10px #ff7700, 0 0 28px #ff0000,
-    0 0 40px #ffff00, 0 0 60px #ff7700;
-  animation: titleGlow 2.6s ease-in-out infinite;
-}
-@keyframes titleGlow{
-  0%,100%{ filter: drop-shadow(0 0 0 rgba(255,255,255,0.0)); }
-  50%{ filter: drop-shadow(0 0 18px rgba(255,255,255,0.35)); }
+/* 弾 */
+.bullet {
+  position: absolute; width: 10px; height: 20px;
+  background: var(--neon-yellow);
+  border-radius: 5px;
+  box-shadow: 0 0 10px var(--neon-yellow);
+  transform: translate(-50%, -50%);
+  z-index: 4;
 }
 
-#instructions{font-size:20px; opacity:.9}
-#difficulty{
-  font-size:18px; padding:6px 10px; border-radius:10px; border:1px solid var(--hud-border);
-  background:rgba(255,255,255,0.05); color:var(--text);
+/* 爆発エフェクト */
+.explosion {
+  position: absolute; width: 60px; height: 60px;
+  background: radial-gradient(circle, white, orange, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: explode 0.5s forwards;
+  z-index: 20;
 }
+@keyframes explode { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; } }
 
-/* ボタン共通：ネオンフレーム */
-#device-select button, #start-button, #restart-button, #title-button, #bgm-toggle, #mobile-controls button{
-  --btn-pad-y: 14px; --btn-pad-x: 28px;
-  position:relative; cursor:pointer; user-select:none;
-  padding:var(--btn-pad-y) var(--btn-pad-x);
-  font:700 18px/1.1 'Orbitron', sans-serif;
-  color:var(--text);
-  background: linear-gradient(180deg, rgba(0,244,255,0.12), rgba(0,244,255,0.04));
-  border:1px solid var(--hud-border);
-  border-radius:14px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), var(--hud-shadow);
-  transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
-}
-#device-select button:hover, #start-button:hover, #restart-button:hover, #title-button:hover, #bgm-toggle:hover{
-  filter:saturate(1.2) brightness(1.1);
-}
-#device-select button:active, #start-button:active, #restart-button:active, #title-button:active{
-  transform: translateY(1px) scale(0.99);
-}
+/* ボムエフェクト */
+#overlay { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 50; }
+.flash { animation: flashAnim 0.5s forwards; }
+@keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
 
-/* ゲーム画面 ------------------------------------------------------ */
-#game-container{
-  position:relative; width:100vw; height:100vh; overflow:hidden; touch-action:none; z-index:0;
-  font-feature-settings:"palt";
+/* ゲームオーバー画面 */
+#game-over {
+  display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  flex-direction: column; align-items: center; gap: 20px;
+  background: rgba(0,0,0,0.8); padding: 40px; border: 2px solid red; z-index: 100;
 }
+#game-over-text { font-size: 3rem; color: red; font-weight: bold; }
 
-/* 背景：星空 */
-#background{
-  position:absolute; inset:0; width:200%; height:100%;
-  background:
-    radial-gradient(1200px 800px at 70% -20%, rgba(0,255,255,0.08), transparent 60%),
-    radial-gradient(900px 600px at -10% 120%, rgba(255,0,128,0.06), transparent 60%),
-    url("images/starfield.svg") repeat;
-  background-size: cover, cover, auto;       /* 星背景をリピート */
-  animation: scrollBackground 20s linear infinite;
-  filter: saturate(1.1) contrast(1.05);
+/* モバイルコントロール */
+#mobile-controls {
+  display: none; /* JSで制御 */
+  position: absolute; inset: 0; pointer-events: none; z-index: 90;
 }
-@keyframes scrollBackground{
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
+#move-buttons { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 20px; pointer-events: auto; }
+#action-buttons { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 20px; pointer-events: auto; }
 
-/* 画面フラッシュ＆ビネット強化 */
-#overlay{ position:absolute; inset:0; background:black; opacity:0; z-index:15; pointer-events:none; }
-.flash{ animation: flashFade 0.9s forwards; }
-@keyframes flashFade{ 0%{ background:white; opacity:1 } 100%{ background:black; opacity:1 } }
-
-/* プレイヤー ------------------------------------------------------ */
-#player{ position:absolute; left:150px; top:50%; transform:translateY(-50%) rotate(90deg); width:168px; height:112px; z-index:5; filter: drop-shadow(0 0 12px rgba(79,172,254,.45)); }
-#player img{ width:100%; height:100%; display:block }
-
-/* ショット系（発光強化） */
-.bullet{
-  position:absolute; width:16px; height:6px;
-  background: linear-gradient(90deg, #fff, var(--neon-yellow));
-  box-shadow: 0 0 10px rgba(255,204,0,0.9), 0 0 26px rgba(255,204,0,0.5);
-  border-radius:3px;
+#mobile-controls button {
+  width: 70px; height: 70px; border-radius: 50%;
+  font-size: 24px; opacity: 0.7;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.5);
 }
-.bullet-strong{
-  position:absolute; width:34px; height:6px;
-  background: linear-gradient(90deg, #fff, var(--neon-cyan));
-  box-shadow: 0 0 12px rgba(0,242,254,0.9), 0 0 28px rgba(0,242,254,0.5);
-  border-radius:3px;
-}
-.beam{
-  position:absolute; width:300px; height:16px;
-  background: linear-gradient(90deg, rgba(255,255,255,.95), var(--neon-cyan), rgba(255,255,255,.95));
-  box-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan), 0 0 48px rgba(0,242,254,.6);
-  border-radius:8px;
-  animation: beamGlow .35s alternate infinite;
-}
-@keyframes beamGlow{
-  from{ box-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan), 0 0 28px rgba(0,242,254,.6) }
-  to  { box-shadow: 0 0 16px var(--neon-cyan), 0 0 36px var(--neon-cyan), 0 0 56px rgba(0,242,254,.75) }
-}
-.homing{
-  position:absolute; width:18px; height:18px; border-radius:50%;
-  background: radial-gradient(circle at 35% 35%, #fff 30%, orange 31% 55%, rgba(255,165,0,.6) 56% 100%);
-  box-shadow: 0 0 12px rgba(255,165,0,0.9), 0 0 36px rgba(255,165,0,0.4);
-  animation: homingPulse 0.9s ease-in-out infinite;
-}
-@keyframes homingPulse{
-  0%,100%{ transform: scale(1); filter: brightness(1) }
-  50%{ transform: scale(1.12); filter: brightness(1.25) }
-}
-
-/* 敵・ボス -------------------------------------------------------- */
-.enemy, .enemy-strong, .enemy-fast, .enemy-shooter, .boss{
-  position:absolute; border-radius:8px; overflow:hidden;
-  z-index:3;
-  filter: drop-shadow(0 0 10px rgba(0,0,0,.4)) drop-shadow(0 0 16px rgba(79,172,254,.25));
-}
-.enemy, .enemy-fast{ width:80px; height:60px }
-.enemy-strong, .enemy-shooter{ width:100px; height:80px }
-.boss{ width:320px; height:240px }
-.enemy img, .enemy-strong img, .enemy-fast img, .enemy-shooter img, .boss img{ width:100%; height:100%; display:block }
-
-.boss.warning{ animation: bossFlash .5s steps(2,start) }
-@keyframes bossFlash{ 0%,100%{ opacity:1 } 50%{ opacity:.35; filter: hue-rotate(20deg) } }
-
-/* 惑星（背景オブジェクト） */
-.planet{
-  position:absolute;
-  border-radius:50%;
-  z-index:1;
-  pointer-events:none;
-  opacity:0.8;
-  box-shadow:0 0 12px rgba(255,255,255,0.2);
-}
-
-/* 爆発を少しリッチに */
-.explosion{
-  position:absolute; width:44px; height:44px; border-radius:50%;
-  background: radial-gradient(circle, #fff 0 20%, #ffb84d 21% 60%, #ff6b00 61% 100%);
-  box-shadow: 0 0 18px rgba(255,107,0,.9), 0 0 44px rgba(255,184,77,.6);
-  animation: explode .32s ease-out forwards;
-  z-index:10;
-}
-@keyframes explode{ 0%{ opacity:1; transform:scale(0.8) } 100%{ opacity:0; transform:scale(2.2) } }
-
-/* 敵弾 */
-.enemy-bullet{
-  position:absolute; width:30px; height:12px; border-radius:6px;
-  background: linear-gradient(90deg, #ff9aa2, #ff003c);
-  box-shadow: 0 0 10px rgba(255,0,60,.85), 0 0 30px rgba(255,0,60,.4);
-}
-
-.enemy-beam{
-  position:absolute; width:300px; height:16px; border-radius:8px;
-  background: linear-gradient(90deg, #ff003c, #ff9aa2, #ff003c);
-  box-shadow: 0 0 8px #ff003c, 0 0 16px #ff003c, 0 0 48px rgba(255,0,60,.6);
-  animation: beamGlow .35s alternate infinite;
-}
-
-/* バリア（当たり3回） */
-.barrier{
-  position:absolute; top:-10px; left:-10px; width:188px; height:132px; border-radius:50%;
-  border:2px solid var(--neon-cyan);
-  box-shadow: inset 0 0 12px rgba(0,242,254,.6), 0 0 18px rgba(0,242,254,.6), 0 0 48px rgba(0,242,254,.35);
-  pointer-events:none;
-}
-
-/* HUD ------------------------------------------------------------- */
-#score,#stage,#countdown{
-  position:absolute; z-index:10; font:600 18px/1 'Orbitron',sans-serif; letter-spacing:.04em;
-  padding:10px 14px; border-radius:12px;
-  color:var(--text);
-  background: var(--hud-glass);
-  border:1px solid var(--hud-border);
-  box-shadow: var(--hud-shadow), inset 0 0 0 1px rgba(255,255,255,0.06);
-  backdrop-filter: blur(8px);
-}
-#score{ top:12px; left:20px }
-#stage{ top:12px; left:50%; transform:translateX(-50%) }
-#countdown{ top:12px; right:20px }
-
-#bgm-toggle{
-  position:absolute; top:52px; right:20px; z-index:10; font-size:14px; padding:8px 12px;
-}
-
-/* モバイル操作 ---------------------------------------------------- */
-#mobile-controls{
-  position:absolute; inset:0; display:none; pointer-events:none; z-index:12;
-}
-#mobile-controls button{
-  width:64px; height:64px; font-size:22px; opacity:0.85; pointer-events:auto;
-  backdrop-filter: blur(6px);
-}
-#move-buttons{ position:absolute; left:20px; bottom:20px }
-#move-buttons button{ margin-right:10px }
-#btn-shoot{ position:absolute; right:20px; bottom:20px }
-
-/* ゲームオーバー -------------------------------------------------- */
-#game-over{
-  display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-  z-index:20; flex-direction:column; align-items:center; text-align:center;
-  color:#ff4455; gap:16px;
-  text-shadow: 0 0 12px rgba(255,68,85,0.75);
-}
-#game-over-text{ font-size:min(12vw,68px); animation: fadeIn 1.4s forwards }
-#final-score{ font-size:28px }
-#restart-button,#title-button{ margin-top:6px }
-
-/* 既存アニメ維持 */
-@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
-
-/* アクセシビリティ：動き抑制 */
-@media (prefers-reduced-motion: reduce){
-  #background, .beam, .homing, .boss.warning, .flash, #start-screen h1{ animation:none }
-}
+#btn-shoot { background: rgba(255, 50, 50, 0.4); }
+#btn-bomb { background: rgba(255, 200, 0, 0.4); width: 60px; height: 60px; }
