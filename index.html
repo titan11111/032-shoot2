@@ -2,57 +2,72 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ギャラクシーストライカーX</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- デバイス選択 -->
   <div id="device-select">
     <h2>プレイ環境を選択</h2>
-    <button id="pc-button">パソコン</button>
-    <button id="mobile-button">携帯</button>
+    <div class="button-group">
+      <button id="pc-button">パソコン</button>
+      <button id="mobile-button">スマホ / タブレット</button>
+    </div>
   </div>
 
-  <!-- スタート画面 -->
   <div id="start-screen" style="display: none;">
-    <h1>ギャラクシー<br>ストライカーX</h1>
-    <p id="instructions">操作: ←→キーで移動 / Spaceでショット</p>
-    <label for="difficulty">難易度:</label>
-    <select id="difficulty">
-      <option value="easy">EASY</option>
-      <option value="normal" selected>NORMAL</option>
-      <option value="hard">HARD</option>
-    </select>
-    <button id="start-button">スタート</button>
+    <h1>GALAXY<br>STRIKER X</h1>
+    <p id="instructions">操作: ←→キーで移動 / Spaceでショット / Bキーでボム</p>
+    <div class="difficulty-select">
+      <label for="difficulty">難易度:</label>
+      <select id="difficulty">
+        <option value="easy">EASY</option>
+        <option value="normal" selected>NORMAL</option>
+        <option value="hard">HARD</option>
+      </select>
+    </div>
+    <button id="start-button">MISSION START</button>
   </div>
 
-  <!-- ゲーム画面 -->
   <div id="game-container">
     <div id="background"></div>
-    <div id="score">Score: 0</div>
-    <div id="stage">Stage: 1</div>
-    <div id="countdown"></div>
+    <div id="ui-layer">
+      <div id="score">Score: 0</div>
+      <div id="stage">Stage: 1</div>
+      <div id="bombs">Bomb: ★★★</div>
+    </div>
+
     <button id="bgm-toggle">BGM: ON</button>
     <div id="overlay"></div>
-    <div id="player"></div>
+    
+    <div id="player">
+      <div class="player-body"></div>
+      <div class="player-engine"></div>
+    </div>
+
     <div id="game-over">
       <div id="game-over-text">GAME OVER</div>
       <div id="final-score"></div>
-      <button id="restart-button">再挑戦</button>
-      <button id="title-button">タイトルに戻る</button>
+      <button id="restart-button">再出撃</button>
+      <button id="title-button">タイトルへ</button>
     </div>
-    <audio id="bgm" loop></audio>
 
-      <!-- 画面上での操作ボタン -->
-      <div id="mobile-controls">
-        <div id="move-buttons">
-          <button id="btn-left" aria-label="move left">←</button>
-          <button id="btn-right" aria-label="move right">→</button>
-        </div>
-        <button id="btn-shoot" aria-label="shoot">●</button>
+    <div id="mobile-controls">
+      <div id="move-buttons">
+        <button id="btn-left" aria-label="左移動">◀</button>
+        <button id="btn-right" aria-label="右移動">▶</button>
       </div>
+      <div id="action-buttons">
+        <button id="btn-bomb" aria-label="ボム">★</button>
+        <button id="btn-shoot" aria-label="ショット">●</button>
+      </div>
+    </div>
   </div>
 
-  <script src="script.js"></script>
+  <audio id="bgm-title" loop preload="auto" src="audio/title_bgm.mp3"></audio>
+  <audio id="bgm-battle" loop preload="auto" src="audio/battle_bgm.mp3"></audio>
+  <audio id="bgm-boss" loop preload="auto" src="audio/boss_bgm.mp3"></audio>
+  <audio id="se-attack" preload="auto" src="audio/attack.mp3"></audio>
+  <audio id="se-explosion" preload="auto" src="audio/levelup.mp3"></audio> <audio id="se-bomb" preload="auto" src="audio/clear.mp3"></audio> <script src="script.js"></script>
 </body>
 </html>
