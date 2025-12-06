@@ -1,73 +1,1209 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ギャラクシーストライカーX</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galactic Vector</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none; /* Prevent default touch actions like scrolling */
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: #000;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hud {
+            padding: 10px;
+            color: #fff;
+            text-shadow: 0 0 5px #0ff;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        #touch-controls {
+            display: none; /* Shown via JS on touch devices */
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .control-zone {
+            position: absolute;
+            bottom: 20px;
+            pointer-events: auto;
+        }
+        #stick-zone {
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        #stick-knob {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            transform: translate(0, 0);
+        }
+        #btn-zone {
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .touch-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid rgba(255, 0, 0, 0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            user-select: none;
+        }
+        #btn-shot { background: rgba(0, 255, 255, 0.3); border-color: #0ff; }
+        #btn-bomb { background: rgba(255, 165, 0, 0.3); border-color: orange; }
+
+        #start-screen, #game-over-screen, #victory-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 10;
+            pointer-events: auto;
+        }
+        h1 { font-size: 40px; color: #0ff; text-shadow: 0 0 10px #0ff; margin-bottom: 10px; text-align: center; }
+        h2 { font-size: 30px; margin-bottom: 20px; }
+        p { margin-bottom: 30px; text-align: center; line-height: 1.5; max-width: 600px; padding: 0 20px;}
+        button {
+            background: transparent;
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 15px 40px;
+            font-size: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 15px #0ff;
+        }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
-  <div id="device-select">
-    <h2>プレイ環境を選択</h2>
-    <div class="button-group">
-      <button id="pc-button">パソコン</button>
-      <button id="mobile-button">スマホ / タブレット</button>
-    </div>
-  </div>
 
-  <div id="start-screen" style="display: none;">
-    <h1>GALAXY<br>STRIKER X</h1>
-    <p id="instructions">操作: ←→キーで移動 / Spaceでショット / Bキーでボム</p>
-    <div class="difficulty-select">
-      <label for="difficulty">難易度:</label>
-      <select id="difficulty">
-        <option value="easy">EASY</option>
-        <option value="normal" selected>NORMAL</option>
-        <option value="hard">HARD</option>
-      </select>
-    </div>
-    <button id="start-button">MISSION START</button>
-  </div>
+<canvas id="gameCanvas"></canvas>
 
-  <div id="game-container">
-    <div id="background"></div>
-    <div id="ui-layer">
-      <div id="score">Score: 0</div>
-      <div id="stage">Stage: 1</div>
-      <div id="bombs">Bomb: ★★★</div>
+<div id="ui-layer">
+    <div class="hud">
+        <span id="score-display">SCORE: 000000</span>
+        <span id="level-display">STAGE: 1</span>
+        <span id="lives-display">SHIPS: 3</span>
     </div>
 
-    <button id="bgm-toggle">BGM: ON</button>
-    <div id="overlay"></div>
+    <!-- Touch Controls -->
+    <div id="touch-controls">
+        <div id="stick-zone" class="control-zone">
+            <div id="stick-knob"></div>
+        </div>
+        <div id="btn-zone" class="control-zone">
+            <div class="touch-btn" id="btn-bomb">BOMB</div>
+            <div class="touch-btn" id="btn-shot">SHOT</div>
+        </div>
+    </div>
+</div>
+
+<div id="start-screen">
+    <h1>GALACTIC VECTOR</h1>
+    <p>横スクロール シューティング<br>
+    PC: 矢印キー移動, Z:ショット, X:ボム<br>
+    Mobile: 画面タッチ操作</p>
+    <button id="start-btn">GAME START</button>
+</div>
+
+<div id="game-over-screen" class="hidden">
+    <h1 style="color: #f00; text-shadow: 0 0 10px #f00;">GAME OVER</h1>
+    <p id="final-score">SCORE: 0</p>
+    <button id="retry-btn">RETRY</button>
+</div>
+
+<div id="victory-screen" class="hidden">
+    <h1 style="color: #ff0; text-shadow: 0 0 10px #ff0;">MISSION COMPLETE</h1>
+    <p>全宇宙の平和は守られた！</p>
+    <p id="victory-score">SCORE: 0</p>
+    <button id="restart-btn">PLAY AGAIN</button>
+</div>
+
+<script>
+// Wrap in IIFE to prevent global scope pollution and redeclaration errors
+(function() {
+
+/**
+ * AUDIO SYSTEM (Simple Synth)
+ */
+const AudioSys = {
+    ctx: null,
+    init: function() {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+    },
+    playTone: function(freq, type, duration, vol = 0.1) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    playShot: function() { this.playTone(880, 'square', 0.1, 0.05); },
+    playExplosion: function() { this.playTone(100, 'sawtooth', 0.4, 0.1); },
+    playPowerUp: function() { 
+        if(!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.linearRampToValueAtTime(880, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.3);
+    },
+    playBossStart: function() {
+        if(!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 2.0);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 2.0);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 2.0);
+    }
+};
+
+/**
+ * GAME ENGINE & CONSTANTS
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let frame = 0;
+let score = 0;
+let isGameOver = false;
+let isVictory = false;
+let gameActive = false;
+let currentLevel = 1;
+let isLevelTransition = false; // Added flag
+
+// Input State
+const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, z: false, x: false };
+const touchInput = { x: 0, y: 0, shot: false, bomb: false, active: false };
+
+// Game Entities
+let player;
+let bullets = [];
+let enemies = [];
+let particles = [];
+let powerups = [];
+let stars = [];
+let boss = null;
+
+// Enums
+const POWER_TYPES = ['SPEED', 'BEAM', 'OPTION', 'BARRIER', 'BOMB'];
+const LEVEL_CONFIG = {
+    1: { bg: ['#000011', '#000033'], starSpeed: 1, bossHP: 100, bossType: 1 }, // Deep Space
+    2: { bg: ['#110000', '#330000'], starSpeed: 2, bossHP: 150, bossType: 2 }, // Red Nebula
+    3: { bg: ['#001100', '#003300'], starSpeed: 3, bossHP: 200, bossType: 3 }, // Bio Zone
+    4: { bg: ['#111100', '#333300'], starSpeed: 4, bossHP: 300, bossType: 4 }, // Asteroid Base
+    5: { bg: ['#110011', '#330033'], starSpeed: 8, bossHP: 500, bossType: 5 }  // Hyper Dimension
+};
+
+/**
+ * UTILS & VECTOR GRAPHICS
+ */
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+
+// Check collision circle vs rect(ish)
+function checkCollision(c1, c2) {
+    const dx = c1.x - c2.x;
+    const dy = c1.y - c2.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return dist < c1.r + c2.r;
+}
+
+/**
+ * CLASSES
+ */
+
+class Star {
+    constructor() {
+        this.init();
+    }
+    init() {
+        this.x = rand(0, W);
+        this.y = rand(0, H);
+        this.size = rand(0.5, 2);
+        this.speed = rand(0.5, 3);
+        this.color = `rgba(255, 255, 255, ${rand(0.3, 1)})`;
+    }
+    update(speedMult) {
+        this.x -= this.speed * speedMult;
+        if (this.x < 0) {
+            this.x = W;
+            this.y = rand(0, H);
+        }
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+    }
+}
+
+class Particle {
+    constructor(x, y, color, speed, size) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * speed;
+        this.vy = (Math.random() - 0.5) * speed;
+        this.life = 1.0;
+        this.decay = rand(0.02, 0.05);
+        this.color = color;
+        this.size = size;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= this.decay;
+    }
+    draw() {
+        // Prevent negative radius error
+        if (this.life <= 0) return;
+
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        // Ensure radius is positive using Math.max
+        const r = Math.max(0, this.size * this.life);
+        ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+class Bullet {
+    constructor(x, y, vx, vy, isPlayer, type = 'NORMAL') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.isPlayer = isPlayer;
+        this.type = type; // NORMAL, BEAM, ENEMY
+        this.r = type === 'BEAM' ? 4 : 3;
+        this.markedForDeletion = false;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < -50 || this.x > W + 50 || this.y < -50 || this.y > H + 50) {
+            this.markedForDeletion = true;
+        }
+    }
+    draw() {
+        ctx.fillStyle = this.isPlayer ? (this.type === 'BEAM' ? '#f0f' : '#0ff') : '#f00';
+        ctx.beginPath();
+        if (this.type === 'BEAM') {
+            ctx.fillRect(this.x - 10, this.y - 2, 20, 4);
+        } else {
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+class PowerUp {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = -1.5;
+        this.vy = Math.sin(frame * 0.1);
+        this.type = POWER_TYPES[Math.floor(Math.random() * POWER_TYPES.length)];
+        this.r = 15;
+        this.markedForDeletion = false;
+        
+        switch(this.type) {
+            case 'SPEED': this.color = '#0ff'; break; // Cyan
+            case 'BEAM': this.color = '#f0f'; break; // Magenta
+            case 'OPTION': this.color = '#0f0'; break; // Green
+            case 'BARRIER': this.color = '#ff0'; break; // Yellow
+            case 'BOMB': this.color = '#f80'; break; // Orange
+        }
+    }
+    update() {
+        this.x += this.vx;
+        this.y += Math.sin(this.x * 0.05) * 1;
+        if (this.x < -50) this.markedForDeletion = true;
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.strokeStyle = this.color;
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Capsule shape
+        ctx.rect(-10, -6, 20, 12);
+        ctx.stroke();
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.type.charAt(0), 0, 0);
+        
+        ctx.restore();
+    }
+}
+
+class Option {
+    constructor() {
+        this.history = []; // Stores positions
+        this.lag = 15; // Frames behind
+        this.x = player.x;
+        this.y = player.y;
+    }
+    update(leaderX, leaderY) {
+        this.history.push({x: leaderX, y: leaderY});
+        if (this.history.length > this.lag) {
+            const pos = this.history.shift();
+            this.x = pos.x;
+            this.y = pos.y;
+        }
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = '#0f0'; // Green glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#0f0';
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Player {
+    constructor() {
+        this.x = 100;
+        this.y = H / 2;
+        this.r = 12; // Hitbox radius
+        this.speed = 4;
+        this.lives = 3;
+        this.powerLevel = 0; // Speed
+        this.hasBeam = false;
+        this.options = [];
+        this.hasBarrier = false;
+        this.barrierHP = 0;
+        this.bombs = 2;
+        this.cooldown = 0;
+        this.invulnerable = 0;
+    }
+
+    update() {
+        // Movement
+        let dx = 0;
+        let dy = 0;
+
+        if (keys.ArrowUp) dy = -1;
+        if (keys.ArrowDown) dy = 1;
+        if (keys.ArrowLeft) dx = -1;
+        if (keys.ArrowRight) dx = 1;
+
+        if (touchInput.active) {
+            dx = touchInput.x;
+            dy = touchInput.y;
+        }
+
+        this.x += dx * (this.speed + this.powerLevel);
+        this.y += dy * (this.speed + this.powerLevel);
+
+        // Bounds
+        this.x = Math.max(20, Math.min(W - 20, this.x));
+        this.y = Math.max(20, Math.min(H - 20, this.y));
+
+        // Options
+        let prevTarget = {x: this.x, y: this.y};
+        this.options.forEach(opt => {
+            opt.update(prevTarget.x, prevTarget.y);
+            prevTarget = {x: opt.x, y: opt.y}; // Next option follows this one (snake chain) or player? Let's do all follow player logic with different lags for simplicity or chain. Chain looks better.
+        });
+        
+        // Actually for Gradius style, options store player history individually. 
+        // Let's reset logic: all track player history but at different indices.
+        // Simplification for this code: Chain.
+        
+        // Shooting
+        if (this.cooldown > 0) this.cooldown--;
+        if ((keys.z || touchInput.shot) && this.cooldown <= 0) {
+            this.shoot();
+            this.cooldown = this.hasBeam ? 15 : 8; // Beam slower but stronger
+        }
+
+        // Bomb
+        if ((keys.x || touchInput.bomb) && this.bombs > 0) {
+            // Simple bomb logic: clear bullets, damage screen
+            keys.x = false; // Prevent hold
+            touchInput.bomb = false;
+            this.useBomb();
+        }
+
+        if (this.invulnerable > 0) this.invulnerable--;
+    }
+
+    shoot() {
+        AudioSys.playShot();
+        const type = this.hasBeam ? 'BEAM' : 'NORMAL';
+        const vX = 12;
+        
+        // Player shot
+        bullets.push(new Bullet(this.x + 20, this.y, vX, 0, true, type));
+        
+        // Option shots
+        this.options.forEach(opt => {
+             bullets.push(new Bullet(opt.x + 10, opt.y, vX, 0, true, type));
+        });
+    }
+
+    useBomb() {
+        this.bombs--;
+        AudioSys.playExplosion();
+        // Clear enemy bullets
+        bullets = bullets.filter(b => b.isPlayer);
+        // Damage all enemies
+        enemies.forEach(e => e.takeDamage(50));
+        if (boss) boss.takeDamage(50);
+        // Visual
+        createExplosion(W/2, H/2, '#fff', 200, 20);
+    }
+
+    applyPowerUp(type) {
+        score += 500;
+        AudioSys.playPowerUp();
+        switch(type) {
+            case 'SPEED': 
+                if(this.speed < 8) this.speed += 1; 
+                break;
+            case 'BEAM': 
+                this.hasBeam = true; 
+                break;
+            case 'OPTION': 
+                if(this.options.length < 3) {
+                    const opt = new Option();
+                    // Initialize option history to current player position to avoid snapping
+                    for(let i=0; i<20; i++) opt.history.push({x:this.x, y:this.y});
+                    this.options.push(opt);
+                }
+                break;
+            case 'BARRIER': 
+                this.hasBarrier = true; 
+                this.barrierHP = 3; 
+                break;
+            case 'BOMB': 
+                this.bombs++; 
+                break;
+        }
+    }
+
+    hit() {
+        if (this.invulnerable > 0) return;
+        
+        if (this.hasBarrier) {
+            this.barrierHP--;
+            AudioSys.playTone(200, 'sawtooth', 0.1);
+            if(this.barrierHP <= 0) this.hasBarrier = false;
+            this.invulnerable = 60;
+            return;
+        }
+
+        // Death
+        AudioSys.playExplosion();
+        createExplosion(this.x, this.y, '#0ff', 50, 5);
+        this.lives--;
+        // Reset powers partially
+        this.powerLevel = 0;
+        this.speed = 4;
+        this.options = [];
+        this.hasBeam = false;
+        
+        this.x = 100;
+        this.y = H/2;
+        this.invulnerable = 120; // 2 sec iframe
+
+        if (this.lives < 0) {
+            endGame();
+        }
+    }
+
+    draw() {
+        if (this.invulnerable > 0 && Math.floor(frame / 4) % 2 === 0) return;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Barrier Visual
+        if(this.hasBarrier) {
+            ctx.strokeStyle = `rgba(255, 255, 0, ${this.barrierHP/3})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 22, 0, Math.PI*2);
+            ctx.stroke();
+        }
+
+        // Draw Player Ship (Vector)
+        ctx.fillStyle = '#ccc';
+        ctx.beginPath();
+        ctx.moveTo(15, 0);
+        ctx.lineTo(-10, 10);
+        ctx.lineTo(-5, 0);
+        ctx.lineTo(-10, -10);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cockpit
+        ctx.fillStyle = '#0ff';
+        ctx.beginPath();
+        ctx.moveTo(0, -3);
+        ctx.lineTo(8, 0);
+        ctx.lineTo(0, 3);
+        ctx.fill();
+
+        // Engine Flame
+        ctx.fillStyle = `rgba(255, 100, 0, ${Math.random()})`;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0);
+        ctx.lineTo(-18, 5);
+        ctx.lineTo(-18, -5);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Draw Options
+        this.options.forEach(o => o.draw());
+    }
+}
+
+class Enemy {
+    constructor(type, x, y) {
+        this.type = type; // 0: Basic, 1: Fast, 2: Tank
+        this.x = x;
+        this.y = y;
+        this.w = 30;
+        this.h = 30;
+        this.r = 15;
+        this.hp = type === 2 ? 5 : (type === 1 ? 1 : 2);
+        this.markedForDeletion = false;
+        this.timer = 0;
+    }
+
+    update() {
+        this.timer++;
+        
+        // Movement Logic
+        if (this.type === 0) { // Sine Wave
+            this.x -= 3;
+            this.y += Math.sin(this.timer * 0.05) * 2;
+        } else if (this.type === 1) { // Fast Dash
+            this.x -= 6;
+        } else if (this.type === 2) { // Slow Tank
+            this.x -= 1.5;
+        }
+
+        // Shoot logic
+        if (this.type === 2 && this.timer % 100 === 0) {
+            let angle = Math.atan2(player.y - this.y, player.x - this.x);
+            bullets.push(new Bullet(this.x, this.y, Math.cos(angle)*4, Math.sin(angle)*4, false));
+        }
+        
+        if (this.x < -50) this.markedForDeletion = true;
+    }
+
+    takeDamage(dmg) {
+        this.hp -= dmg;
+        if (this.hp <= 0) {
+            this.markedForDeletion = true;
+            score += (this.type + 1) * 100;
+            createExplosion(this.x, this.y, '#f00', 10, 2);
+            AudioSys.playExplosion();
+            
+            // Drop Powerup Chance
+            if (Math.random() < 0.15) { // 15% chance
+                powerups.push(new PowerUp(this.x, this.y));
+            }
+        } else {
+            // Hit flash
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = 'white';
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.strokeStyle = '#f00';
+        ctx.lineWidth = 2;
+
+        if (this.type === 0) {
+            // Spinner Shape
+            ctx.rotate(this.timer * 0.1);
+            ctx.beginPath();
+            ctx.moveTo(15, 0); ctx.lineTo(-7, 13); ctx.lineTo(-7, -13);
+            ctx.closePath();
+            ctx.stroke();
+        } else if (this.type === 1) {
+            // Dart Shape
+            ctx.strokeStyle = '#f80';
+            ctx.beginPath();
+            ctx.moveTo(15, 0); ctx.lineTo(-15, 10); ctx.lineTo(-5, 0); ctx.lineTo(-15, -10);
+            ctx.closePath();
+            ctx.stroke();
+        } else if (this.type === 2) {
+            // Box Shape
+            ctx.strokeStyle = '#f0f';
+            ctx.strokeRect(-15, -15, 30, 30);
+            ctx.strokeRect(-8, -8, 16, 16);
+        }
+        ctx.restore();
+    }
+}
+
+class Boss {
+    constructor(level) {
+        this.level = level;
+        this.config = LEVEL_CONFIG[level];
+        this.maxHp = this.config.bossHP;
+        this.hp = this.maxHp;
+        this.x = W + 100;
+        this.y = H / 2;
+        this.r = 60;
+        this.state = 'ENTERING'; // ENTERING, ATTACK, DYING
+        this.timer = 0;
+        this.vy = 2;
+        
+        AudioSys.playBossStart();
+    }
+
+    update() {
+        this.timer++;
+
+        // Entering Phase
+        if (this.state === 'ENTERING') {
+            this.x -= 2;
+            if (this.x < W - 150) {
+                this.state = 'ATTACK';
+            }
+            return;
+        }
+
+        // Movement Phase
+        this.y += this.vy;
+        if (this.y < 80 || this.y > H - 80) this.vy *= -1;
+
+        // Attack Logic based on Level
+        if (this.timer % 60 === 0) {
+            this.firePattern();
+        }
+    }
+
+    firePattern() {
+        // Boss 1: Fan shot
+        // Boss 2: Aimed spread
+        // Boss 3: 360 burst
+        // Boss 4: Fast stream
+        // Boss 5: Spiral
+        
+        const type = this.config.bossType;
+        
+        if (type === 1) {
+            for(let i=-1; i<=1; i++) {
+                bullets.push(new Bullet(this.x - 40, this.y, -5, i*2, false));
+            }
+        } else if (type === 2) {
+            const angle = Math.atan2(player.y - this.y, player.x - this.x);
+            bullets.push(new Bullet(this.x, this.y, Math.cos(angle)*6, Math.sin(angle)*6, false));
+            bullets.push(new Bullet(this.x, this.y, Math.cos(angle+0.2)*6, Math.sin(angle+0.2)*6, false));
+            bullets.push(new Bullet(this.x, this.y, Math.cos(angle-0.2)*6, Math.sin(angle-0.2)*6, false));
+        } else if (type >= 3) {
+            // Spiral or heavier patterns
+            const count = type === 5 ? 12 : 6;
+            for(let i=0; i<count; i++) {
+                const a = (this.timer * 0.1) + (i * (Math.PI*2/count));
+                bullets.push(new Bullet(this.x, this.y, Math.cos(a)*5, Math.sin(a)*5, false));
+            }
+        }
+    }
+
+    takeDamage(dmg) {
+        if (this.state === 'ENTERING') return;
+        this.hp -= dmg;
+        if (this.hp <= 0) {
+            this.die();
+        } else {
+             // Flash effect handled in draw
+        }
+    }
+
+    die() {
+        score += 5000;
+        AudioSys.playExplosion();
+        createExplosion(this.x, this.y, '#fff', 500, 50);
+        boss = null;
+        isLevelTransition = true; // Prevent immediate respawn
+        
+        setTimeout(() => {
+            levelComplete();
+        }, 2000);
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        // Shake if hit
+        if (this.hp < this.maxHp && frame % 10 === 0) {
+            // ctx.translate(rand(-2,2), rand(-2,2)); // Simple shake
+        }
+
+        // Draw Boss Core
+        ctx.fillStyle = `rgb(${255 * (1 - this.hp/this.maxHp)}, 0, 0)`; // Gets redder
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        
+        // SVG-like drawing based on Type
+        ctx.beginPath();
+        if (this.config.bossType === 1) { // Big Core
+            ctx.ellipse(0, 0, 40, 60, 0, 0, Math.PI*2);
+            ctx.moveTo(0, -60); ctx.lineTo(-50, -20); ctx.lineTo(-50, 20); ctx.lineTo(0, 60);
+        } else { // Generic menacing shapes
+            ctx.arc(0, 0, 50, 0, Math.PI*2);
+            // Spikes
+            for(let i=0; i<8; i++) {
+                ctx.rotate(Math.PI/4);
+                ctx.moveTo(40, 0);
+                ctx.lineTo(70, 0);
+            }
+        }
+        ctx.stroke();
+        ctx.fill();
+
+        // Core glow
+        ctx.fillStyle = '#0ff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, Math.PI*2);
+        ctx.fill();
+
+        // HP Bar
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(-40, -80, 80 * (this.hp / this.maxHp), 5);
+
+        ctx.restore();
+    }
+}
+
+/**
+ * FUNCTIONS
+ */
+
+function createExplosion(x, y, color, count, size) {
+    for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, color, 5, rand(1, size)));
+    }
+}
+
+function spawnEnemies() {
+    if (boss || isLevelTransition) return; // Check transition flag
+
+    // Spawn rate increases with level
+    const rate = Math.max(20, 60 - currentLevel * 5);
+
+    if (frame % rate === 0) {
+        const y = rand(50, H - 50);
+        const type = Math.random() < 0.2 ? 2 : (Math.random() < 0.5 ? 1 : 0);
+        enemies.push(new Enemy(type, W + 20, y));
+    }
+}
+
+function checkBossSpawn() {
+    if (boss || isLevelTransition) return; // Check transition flag
+    // Spawn boss after some score or time? Let's do time per level for simplicity
+    // Approx 30 seconds per level before boss
+    const levelDuration = 1800; // 60fps * 30s
+    // Using score based progress to simulate level length
+    const progressNeeded = currentLevel * 2000;
     
-    <div id="player">
-      <div class="player-body"></div>
-      <div class="player-engine"></div>
-    </div>
+    // For demo pacing, let's use a simpler counter reset on level start
+    if (levelTimer > 1500) { // 25 seconds
+        boss = new Boss(currentLevel);
+        // Clear small enemies
+        enemies.forEach(e => {
+            createExplosion(e.x, e.y, '#f00', 10, 2);
+            e.markedForDeletion = true;
+        });
+    }
+}
 
-    <div id="game-over">
-      <div id="game-over-text">GAME OVER</div>
-      <div id="final-score"></div>
-      <button id="restart-button">再出撃</button>
-      <button id="title-button">タイトルへ</button>
-    </div>
+let levelTimer = 0;
 
-    <div id="mobile-controls">
-      <div id="move-buttons">
-        <button id="btn-left" aria-label="左移動">◀</button>
-        <button id="btn-right" aria-label="右移動">▶</button>
-      </div>
-      <div id="action-buttons">
-        <button id="btn-bomb" aria-label="ボム">★</button>
-        <button id="btn-shoot" aria-label="ショット">●</button>
-      </div>
-    </div>
-  </div>
+function levelComplete() {
+    if (currentLevel >= 5) {
+        isVictory = true;
+        endGame();
+    } else {
+        currentLevel++;
+        levelTimer = 0;
+        isLevelTransition = false; // Reset flag
+        // Text popup?
+        const div = document.createElement('div');
+        div.innerText = `STAGE ${currentLevel}`;
+        div.style.position = 'absolute';
+        div.style.top = '40%';
+        div.style.width = '100%';
+        div.style.textAlign = 'center';
+        div.style.color = '#fff';
+        div.style.fontSize = '50px';
+        div.style.textShadow = '0 0 20px #fff';
+        div.style.zIndex = '100';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 2000);
+    }
+}
 
-  <audio id="bgm-title" loop preload="auto" src="audio/title_bgm.mp3"></audio>
-  <audio id="bgm-battle" loop preload="auto" src="audio/battle_bgm.mp3"></audio>
-  <audio id="bgm-boss" loop preload="auto" src="audio/boss_bgm.mp3"></audio>
-  <audio id="se-attack" preload="auto" src="audio/attack.mp3"></audio>
-  <audio id="se-explosion" preload="auto" src="audio/levelup.mp3"></audio> <audio id="se-bomb" preload="auto" src="audio/clear.mp3"></audio> <script src="script.js"></script>
+function endGame() {
+    gameActive = false;
+    document.getElementById('ui-layer').classList.add('hidden');
+    if (isVictory) {
+        document.getElementById('victory-screen').classList.remove('hidden');
+        document.getElementById('victory-score').innerText = `FINAL SCORE: ${score}`;
+    } else {
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `SCORE: ${score}`;
+    }
+}
+
+function resetGame() {
+    score = 0;
+    currentLevel = 1;
+    levelTimer = 0;
+    isGameOver = false;
+    isVictory = false;
+    gameActive = true;
+    isLevelTransition = false; // Reset flag
+    player = new Player();
+    bullets = [];
+    enemies = [];
+    particles = [];
+    powerups = [];
+    boss = null;
+    
+    // UI Reset
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.add('hidden');
+    document.getElementById('victory-screen').classList.add('hidden');
+    document.getElementById('ui-layer').classList.remove('hidden');
+    
+    AudioSys.init();
+    
+    // Generate Stars
+    stars = [];
+    for(let i=0; i<100; i++) stars.push(new Star());
+}
+
+function updateUI() {
+    document.getElementById('score-display').innerText = `SCORE: ${score.toString().padStart(6, '0')}`;
+    document.getElementById('level-display').innerText = `STAGE: ${currentLevel}`;
+    document.getElementById('lives-display').innerText = `SHIPS: ${Math.max(0, player.lives)}`;
+}
+
+function drawBackground() {
+    // Gradient based on level
+    const conf = LEVEL_CONFIG[currentLevel];
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, conf.bg[0]);
+    grad.addColorStop(1, conf.bg[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    
+    // Stars
+    stars.forEach(s => {
+        s.update(conf.starSpeed + (boss ? 5 : 0)); // Warp speed during boss entrance?
+        s.draw();
+    });
+}
+
+function loop() {
+    if (!gameActive) {
+        requestAnimationFrame(loop);
+        return;
+    }
+    frame++;
+    levelTimer++;
+
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+
+    drawBackground();
+
+    // Spawn
+    spawnEnemies();
+    checkBossSpawn();
+
+    // Updates & Draw
+    player.update();
+    player.draw();
+
+    // Bullets
+    bullets.forEach(b => {
+        b.update();
+        b.draw();
+    });
+    bullets = bullets.filter(b => !b.markedForDeletion);
+
+    // Enemies
+    enemies.forEach(e => {
+        e.update();
+        e.draw();
+        
+        // Collision Player Bullet vs Enemy
+        bullets.filter(b => b.isPlayer).forEach(b => {
+            if (checkCollision(b, {x: e.x, y: e.y, r: e.r})) {
+                e.takeDamage(b.type === 'BEAM' ? 2 : 1);
+                if (b.type !== 'BEAM') b.markedForDeletion = true; // Beam penetrates
+                createExplosion(b.x, b.y, '#ff0', 3, 1);
+            }
+        });
+        
+        // Collision Enemy vs Player
+        if (checkCollision(player, {x: e.x, y: e.y, r: e.r})) {
+            e.takeDamage(100);
+            player.hit();
+        }
+    });
+    enemies = enemies.filter(e => !e.markedForDeletion);
+
+    // Boss
+    if (boss) {
+        boss.update();
+        if (boss) boss.draw(); // Safety check
+
+        // Collision Player Bullet vs Boss
+        // Use a loop that checks boss existence every iteration to prevent crash if boss dies mid-loop
+        for (let i = 0; i < bullets.length; i++) {
+            if (!boss) break; // Boss died, stop collision checks
+            
+            let b = bullets[i];
+            if (!b.isPlayer) continue;
+
+            if (b.x > boss.x - 40 && b.x < boss.x + 40 && Math.abs(b.y - boss.y) < 50) {
+                 boss.takeDamage(b.type === 'BEAM' ? 2 : 1);
+                 if (b.type !== 'BEAM') b.markedForDeletion = true;
+                 createExplosion(b.x, b.y, '#fff', 2, 1);
+            }
+        }
+        
+        // Collision Boss vs Player
+        // Re-check if boss exists because it might have died in the bullet loop above
+        if (boss && Math.abs(player.x - boss.x) < 60 && Math.abs(player.y - boss.y) < 40) {
+            player.hit();
+        }
+    }
+
+    // Enemy Bullets vs Player
+    bullets.filter(b => !b.isPlayer).forEach(b => {
+        if (checkCollision(player, b)) {
+            b.markedForDeletion = true;
+            player.hit();
+        }
+    });
+
+    // Powerups
+    powerups.forEach(p => {
+        p.update();
+        p.draw();
+        if (checkCollision(player, p)) {
+            player.applyPowerUp(p.type);
+            p.markedForDeletion = true;
+        }
+    });
+    powerups = powerups.filter(p => !p.markedForDeletion);
+
+    // Particles
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
+    particles = particles.filter(p => p.life > 0);
+
+    updateUI();
+    requestAnimationFrame(loop);
+}
+
+/**
+ * INPUT HANDLERS
+ */
+
+// Keyboard
+window.addEventListener('keydown', e => {
+    if(e.key === 'ArrowUp') keys.ArrowUp = true;
+    if(e.key === 'ArrowDown') keys.ArrowDown = true;
+    if(e.key === 'ArrowLeft') keys.ArrowLeft = true;
+    if(e.key === 'ArrowRight') keys.ArrowRight = true;
+    if(e.key === 'z' || e.key === 'Z') keys.z = true;
+    if(e.key === 'x' || e.key === 'X') keys.x = true;
+});
+
+window.addEventListener('keyup', e => {
+    if(e.key === 'ArrowUp') keys.ArrowUp = false;
+    if(e.key === 'ArrowDown') keys.ArrowDown = false;
+    if(e.key === 'ArrowLeft') keys.ArrowLeft = false;
+    if(e.key === 'ArrowRight') keys.ArrowRight = false;
+    if(e.key === 'z' || e.key === 'Z') keys.z = false;
+    if(e.key === 'x' || e.key === 'X') keys.x = false;
+});
+
+// Touch Logic
+const stickZone = document.getElementById('stick-zone');
+const stickKnob = document.getElementById('stick-knob');
+let stickCenter = {x:0, y:0};
+
+// Detect Touch Device
+function isTouchDevice() {
+    return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+}
+
+if(isTouchDevice()) {
+    document.getElementById('touch-controls').style.display = 'block';
+    document.querySelector('p').innerHTML = "左スティック: 移動<br>右ボタン: ショット(青), ボム(赤)";
+}
+
+stickZone.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const rect = stickZone.getBoundingClientRect();
+    stickCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+    updateStick(touch);
+    touchInput.active = true;
+}, {passive: false});
+
+stickZone.addEventListener('touchmove', e => {
+    e.preventDefault();
+    updateStick(e.changedTouches[0]);
+}, {passive: false});
+
+stickZone.addEventListener('touchend', e => {
+    e.preventDefault();
+    touchInput.x = 0;
+    touchInput.y = 0;
+    touchInput.active = false;
+    stickKnob.style.transform = `translate(0px, 0px)`;
+});
+
+function updateStick(touch) {
+    const maxDist = 40;
+    let dx = touch.clientX - stickCenter.x;
+    let dy = touch.clientY - stickCenter.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    
+    // Normalize
+    if (dist > maxDist) {
+        dx = (dx / dist) * maxDist;
+        dy = (dy / dist) * maxDist;
+    }
+    
+    stickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Output -1 to 1
+    touchInput.x = dx / maxDist;
+    touchInput.y = dy / maxDist;
+}
+
+// Buttons
+const btnShot = document.getElementById('btn-shot');
+const btnBomb = document.getElementById('btn-bomb');
+
+btnShot.addEventListener('touchstart', (e) => { e.preventDefault(); touchInput.shot = true; });
+btnShot.addEventListener('touchend', (e) => { e.preventDefault(); touchInput.shot = false; });
+btnBomb.addEventListener('touchstart', (e) => { e.preventDefault(); touchInput.bomb = true; });
+btnBomb.addEventListener('touchend', (e) => { e.preventDefault(); touchInput.bomb = false; });
+
+// Menu Buttons
+document.getElementById('start-btn').addEventListener('click', resetGame);
+document.getElementById('retry-btn').addEventListener('click', resetGame);
+document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+// Start Loop
+requestAnimationFrame(loop);
+
+})(); // End of IIFE
+</script>
 </body>
 </html>
