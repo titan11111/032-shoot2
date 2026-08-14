@@ -33,6 +33,26 @@ const audio = {
     bomb: document.getElementById('se-bomb')
 };
 
+// 【最新技術 #1】Web Audio API - 周波数解析
+let audioContext = null;
+let analyser = null;
+function initAudioContext() {
+    if (!audioContext && audio.battle) {
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioContext = new AudioContextClass();
+            const source = audioContext.createMediaElementAudioSource(audio.battle);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+        } catch (e) { console.warn('Web Audio API init failed'); }
+    }
+}
+
+// 【最新技術 #2】Performance API
+let frameData = { count: 0, lastTime: performance.now(), fps: 0 };
+
 // --- DOM要素 ---
 const player = document.getElementById('player');
 const gameContainer = document.getElementById('game-container');
@@ -261,27 +281,23 @@ function setupControls() {
         if (e.code === 'Space') keys.Space = false;
     });
 
-    // モバイルタッチ
-    const bindTouch = (id, keyName) => {
+    // 【最新技術 #3】Pointer Events - Touch/Mouse 統一
+    const bindPointerEvents = (id, keyName) => {
         const btn = document.getElementById(id);
         if(!btn) return;
-        const start = (e) => { e.preventDefault(); keys[keyName] = true; };
-        const end = (e) => { e.preventDefault(); keys[keyName] = false; };
-        btn.addEventListener('touchstart', start, {passive: false});
-        btn.addEventListener('touchend', end);
-        btn.addEventListener('mousedown', start);
-        btn.addEventListener('mouseup', end);
+        btn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[keyName] = true; }, {passive: false});
+        btn.addEventListener('pointerup', (e) => { e.preventDefault(); keys[keyName] = false; }, {passive: false});
+        btn.addEventListener('pointercancel', () => { keys[keyName] = false; });
     };
 
-    bindTouch('btn-left', 'ArrowLeft');
-    bindTouch('btn-right', 'ArrowRight');
-    bindTouch('btn-shoot', 'ShootBtn');
-    
+    bindPointerEvents('btn-left', 'ArrowLeft');
+    bindPointerEvents('btn-right', 'ArrowRight');
+    bindPointerEvents('btn-shoot', 'ShootBtn');
+
     // ボムボタン
     const bombBtn = document.getElementById('btn-bomb');
     if(bombBtn) {
-        bombBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerBomb(); }, {passive: false});
-        bombBtn.addEventListener('mousedown', triggerBomb);
+        bombBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); triggerBomb(); }, {passive: false});
     }
 }
 

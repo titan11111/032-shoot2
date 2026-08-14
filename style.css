@@ -13,6 +13,11 @@
   --text:#eaf6ff;
 }
 
+/* 【最新技術 #4】CSS Filters - SVG効果代替 */
+@supports (filter: drop-shadow(0 0 10px cyan)) {
+  :root { --glow-filter: drop-shadow(0 0 10px var(--neon-cyan)); }
+}
+
 *{box-sizing:border-box; user-select: none; -webkit-user-select: none;}
 body{
   margin:0; overflow:hidden;
